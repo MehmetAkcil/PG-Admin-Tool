@@ -32,27 +32,39 @@ A small, self-hosted **PostgreSQL admin UI** built with **Express**, **`pg`**, a
 git clone <your-repo-url>
 cd pg-admin-tool
 npm install
+cp .env.example .env   # optional (Windows CMD: copy .env.example .env)
 npm start
 ```
 
-Open **http://localhost:3840** (or set `PORT`).
+Open **http://localhost:3840** (or set `PORT` in `.env` or the environment).
 
 ```bash
-# Custom port (bash)
+# Custom port (bash), without .env
 PORT=3000 npm start
 
 # Windows PowerShell
 $env:PORT=3000; npm start
 ```
 
+### Development
+
+Uses **nodemon** to restart the server when `server.js` changes:
+
+```bash
+npm run dev
+```
+
 ---
 
 ## Configuration
+
+Environment variables are read from the process environment. If a **`.env`** file exists in the project root, it is loaded automatically via **[dotenv](https://github.com/motdotla/dotenv)** (safe to omit in production if you inject vars another way). Copy **`.env.example`** to **`.env`** and adjust.
 
 | Variable | Description |
 |----------|-------------|
 | `PORT` | HTTP port (default **3840**) |
 | `PG_BIN` / `PGDIR` | Directory containing `pg_dump` and `psql` if they are not on `PATH` |
+| `NODE_ENV` | e.g. `development` / `production` (optional) |
 
 On Windows, the server also tries common install paths under `Program Files\PostgreSQL\<version>\bin` when resolving binaries.
 
@@ -74,12 +86,14 @@ This tool is meant for **trusted networks** (local dev, VPN, private admin hosts
 - **Express** — HTTP API + static files  
 - **pg** — PostgreSQL driver  
 - **multer** — SQL file upload for restore  
+- **dotenv** — optional `.env` loading for local config  
+- **nodemon** (dev) — auto-restart on server file changes  
 
 ---
 
 ## License
 
-MIT — use at your own risk; always test backups and destructive actions on non-production systems first.
+[MIT](LICENSE) — use at your own risk; always test backups and destructive actions on non-production systems first.
 
 ---
 

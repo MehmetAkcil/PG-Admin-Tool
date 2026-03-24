@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Local env (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Logs & OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
