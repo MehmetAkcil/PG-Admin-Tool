@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PostgreSQL Yönetim</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="top-inner">
+      <div>
+        <h1>PostgreSQL Yönetim</h1>
+        <p class="hint">Bağlantı bu sayfa oturumunda tutulur; yenileyince (F5) sıfırlanır.</p>
+      </div>
+      <div id="db-badge" class="db-badge hidden" title="Aktif veritabanı"></div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="card" id="panel-connect">
+      <h2>Bağlantı</h2>
+      <label class="field">
+        <span>Connection string</span>
+        <textarea id="conn-input" rows="3" placeholder="postgresql://kullanici:sifre@localhost:5432/veritabani"></textarea>
+      </label>
+      <p class="small">URL’de <code>/veritabani</code> yoksa önce veritabanı listesi; seçince tablolar açılır.</p>
+      <div class="row">
+        <button type="button" id="btn-connect" class="primary">Bağlan</button>
+        <button type="button" id="btn-disconnect" class="ghost">Bağlantıyı kes</button>
+      </div>
+      <p id="conn-status" class="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card hidden" id="panel-databases">
+      <h2>Veritabanları</h2>
+      <div class="row">
+        <input type="text" id="new-db-name" placeholder="yeni_db_adi" autocomplete="off" />
+        <button type="button" id="btn-db-create" class="primary">Oluştur</button>
+      </div>
+      <ul id="db-list" class="list"></ul>
+    </section>
+
+    <div id="workspace" class="workspace hidden">
+      <nav class="nav-tabs" id="workspace-nav" aria-label="Bölümler">
+        <button type="button" class="nav-tab active" data-tab="tables">Tablolar</button>
+        <button type="button" class="nav-tab" data-tab="sql">SQL</button>
+        <button type="button" class="nav-tab" data-tab="crud">Veri</button>
+        <button type="button" class="nav-tab" data-tab="backup">Yedek</button>
+      </nav>
+
+      <section class="card tab-panel active" id="panel-tables" data-tab="tables">
+        <h2>Tablolar</h2>
+        <div class="toolbar">
+          <button type="button" id="btn-refresh-tables">Yenile</button>
+          <label class="inline"><input type="checkbox" id="bulk-cascade" /> CASCADE</label>
+        </div>
+        <div class="row wrap actions-row">
+          <button type="button" id="btn-bulk-truncate" class="warn">TRUNCATE</button>
+          <button type="button" id="btn-bulk-drop" class="danger">DROP</button>
+        </div>
+        <p class="small muted-line">TRUNCATE/DROP: seçili tablolar · CASCADE açıksa bağımlılıklar da etkilenir.</p>
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="chk-all-tables" title="Tümü" /></th>
+                <th>Şema</th>
+                <th>Tablo</th>
+                <th>Tip</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tables-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card tab-panel hidden" id="panel-sql" data-tab="sql">
+        <h2>SQL</h2>
+        <textarea id="sql-input" rows="10" placeholder="SELECT * FROM public.ornek LIMIT 50;"></textarea>
+        <div class="row">
+          <button type="button" id="btn-run-sql" class="primary">Çalıştır</button>
+        </div>
+        <p id="sql-status" class="status"></p>
+        <div class="table-wrap scroll">
+          <table class="data compact" id="sql-result"></table>
+        </div>
+      </section>
+
+      <section class="card tab-panel hidden" id="panel-crud" data-tab="crud">
+        <h2>Tablo verisi</h2>
+        <div class="row wrap crud-bar">
+          <select id="crud-table" aria-label="Tablo"></select>
+          <button type="button" id="btn-load-rows">Satırları yükle</button>
+          <button type="button" id="btn-show-insert">INSERT</button>
+        </div>
+        <p id="crud-status" class="status"></p>
+        <div class="table-wrap scroll">
+          <table class="data compact" id="crud-rows"></table>
+        </div>
+
+        <div id="insert-panel" class="subpanel hidden">
+          <h3>Yeni satır (JSON)</h3>
+          <textarea id="insert-json" rows="6" placeholder='{ "kolon": "deger" }'></textarea>
+          <button type="button" id="btn-insert" class="primary">Ekle</button>
+        </div>
+
+        <div id="edit-panel" class="subpanel hidden">
+          <h3>Güncelle / Sil</h3>
+          <p class="small">Birincil anahtar (JSON)</p>
+          <textarea id="pk-json" rows="3"></textarea>
+          <p class="small">Güncellenecek alanlar</p>
+          <textarea id="upd-json" rows="4"></textarea>
+          <div class="row">
+            <button type="button" id="btn-update" class="primary">Güncelle</button>
+            <button type="button" id="btn-delete" class="danger">Sil</button>
+            <button type="button" id="btn-edit-cancel" class="ghost">Kapat</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card tab-panel hidden" id="panel-db-tools" data-tab="backup">
+        <h2>Yedek &amp; geri yükleme</h2>
+        <p class="small">Sunucuda <code>pg_dump</code> ve <code>psql</code> bulunmalı (PostgreSQL client). Windows’ta otomatik aranır; olmazsa <code>PG_BIN</code> ile bin klasörünü verin.</p>
+        <div class="row wrap backup-actions">
+          <button type="button" id="btn-backup" class="primary">Yedek indir</button>
+          <label class="file-btn">
+            SQL yükle
+            <input type="file" id="restore-file" accept=".sql,.sql.gz" />
+          </label>
+        </div>
+        <p id="restore-status" class="status"></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <span>Express + pg</span>
+  </footer>
+
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+
+  <div id="modal-copy-db" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-copy-title">
+    <div class="modal-backdrop" id="modal-copy-backdrop"></div>
+    <div class="modal-shell">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-copy-title">Veritabanını kopyala</h3>
+          <button type="button" class="modal-close" id="modal-copy-x" aria-label="Kapat">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="small">Kaynak: <code id="modal-copy-source"></code></p>
+          <label class="field">
+            <span>Yeni veritabanı adı</span>
+            <input type="text" id="modal-copy-target" autocomplete="off" placeholder="ornek_kopya" />
+          </label>
+          <p class="small">Kaynak DB’deki oturumlar kopya öncesi kesilir (<code>WITH TEMPLATE</code>).</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="modal-copy-cancel" class="ghost">İptal</button>
+          <button type="button" id="modal-copy-confirm" class="primary">Oluştur</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-confirm" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title">
+    <div class="modal-backdrop" id="modal-confirm-backdrop"></div>
+    <div class="modal-shell">
+      <div class="modal-card modal-card--narrow">
+        <div class="modal-header">
+          <h3 id="modal-confirm-title">Onay</h3>
+          <button type="button" class="modal-close" id="modal-confirm-x" aria-label="Kapat">×</button>
+        </div>
+        <p id="modal-confirm-body" class="modal-body"></p>
+        <div class="modal-footer">
+          <button type="button" id="modal-confirm-cancel" class="ghost">İptal</button>
+          <button type="button" id="modal-confirm-ok" class="primary">Tamam</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
